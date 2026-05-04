@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Give one specific and expert study technique for ${subject} in 10 words.` }] }]
+        contents: [{ parts: [{ text: `Give a 5-word study tip for ${subject}` }] }]
       })
     });
 
