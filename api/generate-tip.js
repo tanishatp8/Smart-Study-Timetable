@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+    const response = await fetch(https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="apiKey, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     const tip = data.candidates[0].content.parts[0].text;
     res.status(200).json({ tip });
   } catch (error) {
-    res.status(500).json({ tip: "Keep practicing " + subject });
+    console.error(error);
+    res.status(200).json({ tip: "Focus on active recall for " + subject });
   }
 }
