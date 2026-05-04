@@ -143,15 +143,15 @@
         // --- STEP 2: THE AI BRAIN PHONE CALL ---
         async function getAITip(subject, daysLeft) {
   try {
-    // Ye line aapke naye Backend (Vercel API) ko call karegi
-    const response = await fetch(`/api/generate-tip?subject=${encodeURIComponent(subject)}&daysLeft=${daysLeft}`);
+    // This line finds Vercel backend
+    const response = await fetch(`/api/generate-tip?subject=${encodeURIComponent(subject)}`);
     const data = await response.json();
     
-    // Backend se aaya hua tip return karega
-    return data.tip || "Focus on core concepts!";
+    // Agar backend se tip aayi toh wo dikhao
+    return data.tip; 
   } catch (error) {
     console.error("AI Error:", error);
-    return "Focus on core concepts!";
+    return "AI connecting..."; // This shows connection is failing
   }
 }
 
