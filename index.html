@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Study Timetable</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+        }
+        h1 { color: #2d3436; margin-bottom: 10px; font-size: 24px; }
+        .input-box { text-align: left; margin-bottom: 15px; }
+        .input-box label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: #2d3436; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: 10px;
+            outline: none;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+        #genBtn { background: #667eea; color: white; }
+        #downloadBtn { background: #2d3436; color: white; display: none; margin-top: 15px; }
+        
+        .timetable-container { 
+            margin-top: 30px; 
+            padding: 20px; 
+            background: #ffffff; 
+            border-radius: 15px;
+            display: none;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            text-align: left;
+        }
+        .day-header {
+            background: #4338ca;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        .session-card {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 6px solid #667eea;
+            font-size: 13px;
+        }
+        .ai-tip {
+            font-size: 11px;
+            color: #4338ca;
+            margin-top: 5px;
+            font-style: italic;
+            display: block;
+            font-weight: 600;
+        }
+        .break-card {
+            background: #fff5f5;
+            border-left: 6px solid #ff7675;
+            color: #d63031;
+            font-weight: 500;
+        }
+        .tag {
+            font-size: 10px;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .loading-text { color: #667eea; font-weight: bold; display: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="glass-card">
+        <h1>✨ Smart AI Study Timetable</h1>
+        <p style="font-size:14px; color:#636e72; margin-bottom: 20px;">Let AI organize your study time</p>
+        
+        <div class="form">
+            <div class="input-box">
+                <label>Subjects (Comma separated)</label>
+                <input type="text" id="subject" placeholder="Math, Java, Physics">
+            </div>
+            <div class="input-box">
+                <label>Subject Priorities (1-5)</label>
+                <input type="text" id="priorities" placeholder="5, 3, 2">
+            </div>
+            <div class="input-box">
+                <label>Daily Study Hours</label>
+                <input type="number" id="hours" placeholder="e.g. 6">
+            </div>
+            <div class="input-box">
+                <label>Exams Start Date</label>
+                <input type="date" id="deadline">
+            </div>
+            
+            <button onclick="generatePlan()" id="genBtn">Generate AI Roadmap</button>
+            <div id="loading" class="loading-text">Robot is thinking... 🧠</div>
+            <button onclick="downloadImage()" id="downloadBtn">Download Roadmap (PNG)</button>
+        </div>
+
+        <div id="timetable" class="timetable-container"></div>
+    </div>
+
+    <script>
+        // --- STEP 2: THE AI BRAIN PHONE CALL ---
+        async function getAITip(subject, daysLeft) {
+            const apiKey = "AIzaSyB3rux-3Lrm04x2DmLMfkW_cI_JTy-W-2s"; // 👈 PUT YOUR KEY HERE!
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+            const prompt = {
+                contents: [{
+                    parts: [{ text: `Give me 1 specific study topic for ${subject} for a student whose exam is in ${daysLeft} days. Max 7 words.` }]
+                }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(prompt)
+                });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                return "Focus on core concepts!";
+            }
+        }
+
+        function formatTime(decimalHours) {
+            const h = Math.floor(decimalHours);
+            const m = Math.round((decimalHours - h) * 60);
+            if (h === 0) return `${m} min`;
+            if (m === 0) return `${h} hour(s)`;
+            return `${h}h ${m}m`;
+        }
+
+        // --- STEP 3: THE GENERATOR (NOW ASYNC) ---
+        async function generatePlan() {
+            const subInput = document.getElementById('subject').value;
+            const prioInput = document.getElementById('priorities').value;
+            const hrsInput = document.getElementById('hours').value;
+            const dateInput = document.getElementById('deadline').value;
+            const display = document.getElementById('timetable');
+            const loader = document.getElementById('loading');
+
+            if (!subInput || !prioInput || !hrsInput || !dateInput) return alert("Fill all fields!");
+
+            loader.style.display = "block"; // Show "Thinking" text
+            display.style.display = "none";
+
+            const subjects = subInput.split(',').map(s => s.trim());
+            const priorities = prioInput.split(',').map(p => parseInt(p.trim()));
+            const dailyHrs = parseFloat(hrsInput);
+            
+            const today = new Date();
+            const examDate = new Date(dateInput);
+            const totalDays = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+
+            if (totalDays <= 0) {
+                loader.style.display = "none";
+                return alert("Date must be in the future!");
+            }
+
+            let resultHTML = `<h2 style="font-size:18px; margin-bottom:15px;">Smart AI Roadmap</h2>`;
+            const subjectsPerDay = dailyHrs > 4 ? 3 : 2;
+
+            // Loop through days
+            for (let d = 1; d <= Math.min(totalDays, 7); d++) { // AI tips for first 7 days to keep it fast
+                let currentDate = new Date();
+                currentDate.setDate(today.getDate() + d);
+                resultHTML += `<div class="day-header">DAY ${d} - ${currentDate.toDateString()}</div>`;
+
+                let daySubjects = [];
+                for (let i = 0; i < subjectsPerDay; i++) {
+                    let index = (d + i - 1) % subjects.length;
+                    daySubjects.push({ name: subjects[index], priority: priorities[index] });
+                }
+
+                const dayTotalWeight = daySubjects.reduce((sum, s) => sum + s.priority, 0);
+
+                for (const sub of daySubjects) {
+                    const subTime = (sub.priority / dayTotalWeight) * dailyHrs;
+                    
+                    // CALL THE AI FOR EACH SUBJECT
+                    const aiAdvice = await getAITip(sub.name, totalDays - d);
+
+                    resultHTML += `
+                        <div class="session-card">
+                            <span class="tag">Priority ${sub.priority}</span>
+                            <strong>${sub.name}</strong>: ${formatTime(subTime)}
+                            <span class="ai-tip">🤖 AI: ${aiAdvice}</span>
+                        </div>
+                    `;
+                }
+                resultHTML += `<div class="session-card break-card">☕ 15-Min Break</div>`;
+            }
+
+            display.innerHTML = resultHTML;
+            display.style.display = "block";
+            loader.style.display = "none";
+            document.getElementById('downloadBtn').style.display = "block";
+        }
+
+        function downloadImage() {
+            const timetable = document.getElementById('timetable');
+            const oldH = timetable.style.maxHeight;
+            timetable.style.maxHeight = "none";
+            html2canvas(timetable).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'AI_Study_Plan.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                timetable.style.maxHeight = oldH;
+            });
+        }
+    </script>
+</body>
+</html>
